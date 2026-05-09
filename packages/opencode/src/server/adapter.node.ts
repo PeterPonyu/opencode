@@ -3,6 +3,7 @@ import { createAdaptorServer, type ServerType } from "@hono/node-server"
 import { createNodeWebSocket } from "@hono/node-ws"
 import type { Hono } from "hono"
 import type { Adapter, FetchApp, Opts } from "./adapter"
+import { ServerPort } from "./port"
 
 async function listen(app: FetchApp, opts: Opts, inject?: (server: ServerType) => void) {
   const start = (port: number) =>
@@ -27,7 +28,7 @@ async function listen(app: FetchApp, opts: Opts, inject?: (server: ServerType) =
       server.listen(port, opts.hostname)
     })
 
-  const server = opts.port === 0 ? await start(4096).catch(() => start(0)) : await start(opts.port)
+  const server = opts.port === 0 ? ((await ServerPort.firstAvailablePromise(start)) ?? (await start(0))) : await start(opts.port)
   const addr = server.address()
   if (!addr || typeof addr === "string") {
     throw new Error(`Failed to resolve server address for port ${opts.port}`)

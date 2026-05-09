@@ -1,6 +1,7 @@
 import type { Hono } from "hono"
 import { createBunWebSocket } from "hono/bun"
 import type { Adapter, FetchApp, Opts } from "./adapter"
+import { ServerPort } from "./port"
 
 function listen(app: FetchApp, opts: Opts, websocket?: ReturnType<typeof createBunWebSocket>["websocket"]) {
   const start = (port: number) => {
@@ -13,7 +14,7 @@ function listen(app: FetchApp, opts: Opts, websocket?: ReturnType<typeof createB
       return
     }
   }
-  const server = opts.port === 0 ? (start(4096) ?? start(0)) : start(opts.port)
+  const server = opts.port === 0 ? (ServerPort.firstAvailable(start) ?? start(0)) : start(opts.port)
   if (!server) {
     throw new Error(`Failed to start server on port ${opts.port}`)
   }

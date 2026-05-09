@@ -26,6 +26,7 @@ import { WebSocketTracker } from "./routes/instance/httpapi/websocket-tracker"
 import { PublicApi } from "./routes/instance/httpapi/public"
 import * as ServerBackend from "./backend"
 import type { CorsOptions } from "./cors"
+import { ServerPort } from "./port"
 
 // @ts-ignore This global is needed to prevent ai-sdk from logging warnings to stdout https://github.com/vercel/ai/blob/2dc67e0ef538307f21368db32d5a12345d98831b/packages/ai/src/logger/log-warnings.ts#L85
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -288,10 +289,10 @@ async function listenHttpApi(opts: ListenOptions, selection: ServerBackend.Selec
   }
 
   // Match the legacy adapter port-resolution behavior: explicit `0` prefers
-  // 4096 first, then any free port.
+  // the deterministic default range first, then any free port.
   let resolved: Awaited<ReturnType<typeof start>> | undefined
   if (opts.port === 0) {
-    resolved = await start(4096).catch(() => undefined)
+    resolved = await ServerPort.firstAvailablePromise(start)
     if (!resolved) resolved = await start(0)
   } else {
     resolved = await start(opts.port)
