@@ -6,7 +6,10 @@ export function autoPortCandidates() {
 }
 
 export function firstAvailable<T>(start: (port: number) => T | undefined) {
-  return autoPortCandidates().map(start).find(Boolean)
+  for (const port of autoPortCandidates()) {
+    const result = start(port)
+    if (result) return result
+  }
 }
 
 export function firstAvailablePromise<T>(start: (port: number) => Promise<T>) {
