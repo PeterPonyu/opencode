@@ -4,15 +4,40 @@ import { useTheme } from "../context/theme"
 import { useDialog } from "@tui/ui/dialog"
 import { useSync } from "@tui/context/sync"
 import { For, Match, Switch, Show, createMemo } from "solid-js"
+import { parseModel, useLocal } from "@tui/context/local"
 
 export type DialogStatusProps = {}
 
 export function DialogStatus() {
   const sync = useSync()
+  const local = useLocal()
   const { theme } = useTheme()
   const dialog = useDialog()
 
   const enabledFormatters = createMemo(() => sync.data.formatter.filter((f) => f.enabled))
+  const visibleAgents = createMemo(() => sync.data.agent.filter((agent) => !agent.hidden))
+
+  function configuredModel(agent: (typeof sync.data.agent)[number]) {
+    if (agent.name === local.agent.current()?.name) return local.model.current()
+    if (agent.model) return agent.model
+
+    const configuredAgent = sync.data.config.agent?.[agent.name]
+    if (configuredAgent?.model) return parseModel(configuredAgent.model)
+
+    if (sync.data.config.model) return parseModel(sync.data.config.model)
+  }
+
+  function modelLabel(agent: (typeof sync.data.agent)[number]) {
+    const model = configuredModel(agent)
+    if (!model) return "No model configured"
+
+    const provider = sync.data.provider.find((item) => item.id === model.providerID)
+    const info = provider?.models[model.modelID]
+    const providerName = provider?.name ?? model.providerID
+    const modelName = info?.name ?? model.modelID
+    const variant = agent.variant ? ` · ${agent.variant}` : ""
+    return `${providerName} · ${modelName}${variant}`
+  }
 
   const plugins = createMemo(() => {
     const list = sync.data.config.plugin ?? []
@@ -86,6 +111,31 @@ export function DialogStatus() {
                         {(val) => (val() as { error: string }).error}
                       </Match>
                     </Switch>
+                  </span>
+                </text>
+              </box>
+            )}
+          </For>
+        </box>
+      </Show>
+      <Show when={visibleAgents().length > 0} fallback={<text fg={theme.text}>No Agents</text>}>
+        <box>
+          <text fg={theme.text}>{visibleAgents().length} Agents</text>
+          <For each={visibleAgents()}>
+            {(item) => (
+              <box flexDirection="row" gap={1}>
+                <text
+                  flexShrink={0}
+                  style={{
+                    fg: item.mode === "subagent" ? theme.textMuted : theme.success,
+                  }}
+                >
+                  •
+                </text>
+                <text fg={theme.text} wrapMode="word">
+                  <b>{item.name}</b>{" "}
+                  <span style={{ fg: theme.textMuted }}>
+                    {item.mode} · {modelLabel(item)}
                   </span>
                 </text>
               </box>
