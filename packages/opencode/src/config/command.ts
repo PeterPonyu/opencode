@@ -20,6 +20,8 @@ export const Info = Schema.Struct({
   agent: Schema.optional(Schema.String),
   model: Schema.optional(ConfigModelID),
   subtask: Schema.optional(Schema.Boolean),
+  // noReply: skip LLM dispatch after command output (display-only commands)
+  noReply: Schema.optional(Schema.Boolean),
 }).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export type Info = Schema.Schema.Type<typeof Info>
